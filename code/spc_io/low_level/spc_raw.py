@@ -118,13 +118,16 @@ class SpcRaw:
 
     @property
     def xarray(self):
-        if self._xarray is not None:
-            arr = numpy.ctypeslib.as_array(self._xarray)
+        if not self.main_header.ftflgs.TXYXYS:
+            if self.main_header.ftflgs.TXVALS:
+                arr = numpy.ctypeslib.as_array(self._xarray)
+            else:
+                arr = numpy.linspace(self.main_header.ffirst,
+                                     self.main_header.flast,
+                                     self.main_header.fnpts)
+            return arr
         else:
-            arr = numpy.linspace(self.main_header.ffirst,
-                                 self.main_header.flast,
-                                 self.main_header.fnpts)
-        return arr
+            return None
 
     @xarray.setter
     def xarray(self, val):
