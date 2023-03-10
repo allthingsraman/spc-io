@@ -12,5 +12,5 @@ class Ftflgs(Structure):
         ('TORDRD', c_uint8, 1),   # If TMULTI abd TORDRD=1 then ordered but uneven subtimes
         ('TALABS', c_uint8, 1),   # Set if should use fcatxt axis labels, not fxtype etc.
         ('TXYXYS', c_uint8, 1),   # If TXVALS and multifile, then each subfile has own X's
-        ('TXVALS', c_uint8, 1),   # Floating X value array preceeds Y's  (New format only)
+        ('TXVALS', c_uint8, 1),   # Floating X value array preceeds Y's (New format only)
     ]

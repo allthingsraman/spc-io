@@ -17,9 +17,9 @@ class SubHdr(Structure):
     _pack_ = 1
     _fields_ = [
         ('subflgs', Subflgs),    # Flags as defined above
-        ('subexp', c_uint8),        # Exponent for sub-file's Y values (80h=>float)
+        ('subexp', c_uint8),     # Exponent for sub-file's Y values (80h=>float)
         ('subindx', c_uint16),   # Integer index number of trace subfile (0=first)
-        ('subtime', c_float),    # Floating time for trace (Z axis coordinate)
+        ('subfirst', c_float),   # Floating time for trace (Z axis coordinate)
         ('subnext', c_float),    # Floating time for next trace (May be same as beg)
         ('subnois', c_float),    # Floating peak pick noise level if high byte nonzero
         ('subnpts', c_uint32),   # Integer number of subfile points for TXYXYS type

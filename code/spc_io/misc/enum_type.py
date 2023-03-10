@@ -1,6 +1,28 @@
 from ctypes import LittleEndianStructure
 
 
+class EnumMethods(LittleEndianStructure):
+    @property
+    def UNKNOWN(self):
+        return self._val not in self._enums_
+
+    def __init__(self, _val):
+        if isinstance(_val, str):
+            num = list(self._enums_.keys())[list(self._enums_.values()).index(_val)]
+            super().__init__(_val=num)
+        else:
+            super().__init__(_val=_val)
+
+    def __str__(self):
+        if self._val not in self._enums_:
+            return 'UNKNOWN'
+        else:
+            return self._enums_[self._val]
+
+    def __repr__(self):
+        return f'{type(self).__name__}({self._val})'
+
+
 class EnumType(type):
     def __new__(cls, name, bases, dct):
         dct_struct = dict(
@@ -13,13 +35,5 @@ class EnumType(type):
                            self._val in dct['_enums_'] and dct['_enums_'][self._val] == enumt[0])
             for enum in dct['_enums_'].values()
         })
-        dct_struct.update({
-            'UNKNOWN': property(lambda self: self._val not in dct['_enums_']),
-            '__str__': (lambda self:
-                        'UNKNOWN' if self._val not in dct['_enums_'] else
-                        dct['_enums_'][self._val]
-                        ),
-            '__repr__': (lambda self: f'{name}({self._val})')
-        })
-        ret = type(name, (LittleEndianStructure,), dct_struct)
+        ret = type(name, (EnumMethods,), dct_struct)
         return ret
