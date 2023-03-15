@@ -147,7 +147,8 @@ class SpcRaw(XArrayProperty):
                 size += sizeof(sub._xarray)
             size += sizeof(sub._yarray)
             ofs += size
-            self.dirs.append(Ssfstc(ssfposn=ofs, ssfsize=size, ssftime=sub.z))
+            if sub.z is not None:
+                self.dirs.append(Ssfstc(ssfposn=ofs, ssfsize=size, ssftime=sub.z))
 
         # Directory offset
         ofs += sizeof(self.log_book)

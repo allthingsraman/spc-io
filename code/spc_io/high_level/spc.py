@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import io
 from typing import Union, List, Literal, ForwardRef
+import logging
 from datetime import datetime
 import numpy.typing as npt
 import numpy as np
+import pandas as pd
 from pydantic import validate_arguments
 from spc_io.low_level.headers.fxytype import Fxtype, Fytype
 from spc_io.low_level.spc_raw import SpcRaw
@@ -17,7 +19,7 @@ from spc_io.low_level.headers.sub_hdr import SubHdr, Subflgs
 from .log_book import LogBook
 from .even_axis import EvenAxis
 
-import pandas as pd
+logger = logging.getLogger(__name__)
 
 SPC = ForwardRef('SPC')
 
@@ -132,12 +134,16 @@ class SPC:
                            text=spc_raw.log_book.txt_as_dict())
         main_header = spc_raw.main_header
         fdate = main_header.fdate
-        date = datetime(year=fdate.year,
-                        month=fdate.month,
-                        day=fdate.day,
-                        hour=fdate.hour,
-                        minute=fdate.min,
-                        )
+        try:
+            date = datetime(year=fdate.year,
+                            month=fdate.month,
+                            day=fdate.day,
+                            hour=fdate.hour,
+                            minute=fdate.min,
+                            )
+        except ValueError as e:
+            logger.warning(repr(e))
+            date = datetime.fromtimestamp(0)
 
         if not main_header.ftflgs.TXYXYS:
             if main_header.ftflgs.TXVALS:
