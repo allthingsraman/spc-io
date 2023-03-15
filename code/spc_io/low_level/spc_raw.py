@@ -1,89 +1,41 @@
-from ctypes import sizeof
-import ctypes
+from ctypes import sizeof, c_float, string_at, addressof, c_int16, c_int32
 import io
+from typing import List, Union
+import logging
+from pydantic import validate_arguments
 from .headers.main import SpcHdr
-from .headers.subfile import SubHdr
+from .headers.sub_hdr import SubHdr
 from .headers.logbook import Logstc
 from .headers.directory import Ssfstc
-import numpy
-import logging
+from .sub_file import SubFile
+from .xarray_property import XArrayProperty
+
 logger = logging.getLogger(__name__)
 
 
-class SubFile:
-    def __init__(self, header, ydata_type, xarray=None, yarray=None):
-        self.header = header
-        self._ydata_type = ydata_type
-        self._xarray = xarray
-        self._yarray = yarray
-        self._z = None
-        self._w = None
-        if yarray is not None:
-            if yarray._type_ != self._ydata_type:
-                raise ValueError('yarray and ydata_type differ')
-
-        if self._ydata_type not in {ctypes.c_float,
-                                    ctypes.c_int16,
-                                    ctypes.c_int32, }:
-            raise ValueError(f'Unexpected _ydata_type {self._ydata_type}')
-
-    @property
-    def z(self):
-        if self._z is not None:
-            return self._z
-        else:
-            return self.header.subfirst
-
-    @z.setter
-    def z(self, val):
-        # support only non evenly distributed z
-        self._z = None
-        self.header.subfirst = val
-
-    @property
-    def w(self):
-        if self._w is not None:
-            return self._w
-        else:
-            return self.header.subwlevel
-
-    @w.setter
-    def w(self, val):
-        # support only non evenly distributed w
-        self._w = None
-        self.header.subwlevel = val
-
-    @property
-    def xarray(self):
-        arr = numpy.ctypeslib.as_array(self._xarray)
-        return arr
-
-    @xarray.setter
-    def xarray(self, arr):
-        self._xarray = numpy.ctypeslib.as_ctypes(arr.astype(ctypes.c_float))
-
-    @property
-    def yarray(self):
-        arr = numpy.ctypeslib.as_array(self._yarray)
-        if self._ydata_type == ctypes.c_float:
-            return arr
-        elif self._ydata_type == ctypes.c_int16:
-            return (2 ** (self.header.subexp-16)) * arr
-        elif self._ydata_type == ctypes.c_int32:
-            return (2 ** (self.header.subexp-32)) * arr
-
-    @yarray.setter
-    def yarray(self, arr):
-        if self._ydata_type == ctypes.c_int16:
-            arr = arr / (2 ** (self.header.subexp-16))
-        elif self._ydata_type == ctypes.c_int32:
-            arr = arr / (2 ** (self.header.subexp-32))
-        self._yarray = numpy.ctypeslib.as_ctypes(arr.astype(self._ydata_type))
-
-
-class SpcRaw:
+class SpcRaw(XArrayProperty):
     @classmethod
-    def from_bytes_io(cls, bytes_io: io.BytesIO):
+    @validate_arguments(config=dict(arbitrary_types_allowed=True))
+    def from_high_level(cls, *,
+                        header: SpcHdr,
+                        subs: List[SubFile],
+                        xarray=None,
+                        log_binary: bytes = b'',
+                        log_disk: bytes = b'',
+                        log_txt={},
+                        ):
+        self = cls()
+        self.main_header = header
+        self.xarray = xarray
+        self.subs = subs
+        self.log_header, self.log_book = Logstc.new_header_and_logbook_from_data(
+            disk=log_disk, binary=log_binary, txt=log_txt)
+        self.dirs = list()
+        self.calcuate_offsets()
+        return self
+
+    @classmethod
+    def from_bytes_io(cls, bytes_io: Union[io.BytesIO, io.BufferedReader]):
         self = cls()
         self.subs = list()
         self._xarray = None
@@ -105,34 +57,44 @@ class SpcRaw:
         # global X
         if self.main_header.ftflgs.TXVALS and not self.main_header.ftflgs.TXYXYS:
             # single X array for all Y
-            self._xarray = read_bytes(ctypes.c_float*self.main_header.fnpts)
+            self._xarray = read_bytes(c_float*self.main_header.fnpts)
 
         # subfiles
         for sub_i in range(self.main_header.fnsub):
             sub_header = read_bytes(SubHdr)
-            ydata_type = (sub_header.DataType() or self.main_header.DataType())
-            sub_file = SubFile(sub_header, ydata_type=ydata_type)
-            self.subs.append(sub_file)
+            if self.main_header.fexp == -0x80 or sub_header.subexp == -0x80:
+                ydata_type = c_float
+            else:
+                if self.main_header.ftflgs.TSPREC:  # single precision
+                    ydata_type = c_int16
+                else:
+                    ydata_type = c_int32
             if self.main_header.ftflgs.TXYXYS:
                 # particular x
-                sub_file._xarray = read_bytes(ctypes.c_float*sub_header.subnpts)
-                y_array = read_bytes(ydata_type*sub_header.subnpts)
+                xarray = read_bytes(c_float*sub_header.subnpts)
+                yarray = read_bytes(ydata_type*sub_header.subnpts)
             else:
-                y_array = read_bytes(ydata_type*self.main_header.fnpts)
-            sub_file._yarray = y_array
+                xarray = None
+                yarray = read_bytes(ydata_type*self.main_header.fnpts)
+            sub_file = SubFile(sub_header,
+                               xarray=xarray,
+                               yarray=yarray,
+                               single_prec=self.main_header.ftflgs.TSPREC)
+            self.subs.append(sub_file)
 
         # fix w axis
-        if self.main_header.fwinc:
-            # w values are evenly distributed
-            w_first = self.subs[0].header.subwlevel
-            for sub in self.subs:
-                if self.main_header.fwplanes:
-                    # w axis enabled
+        w_first = self.subs[0].header.subwlevel
+        for sub in self.subs:
+            if self.main_header.fwplanes:
+                # w axis enabled
+                if self.main_header.fwinc:
+                    # w values are evenly distributed
                     w_i = sub.header.subindx // self.main_header.fwplanes
                     sub._w = w_first + self.main_header.fwinc * w_i
                 else:
-                    # w axis disabled
-                    sub._w = 0
+                    sub._w = True  # take from subfile header
+            else:
+                sub._w = False  # W axis is disabled
 
         # fix z axis
         if self.main_header.ftflgs.TMULTI:
@@ -146,6 +108,10 @@ class SpcRaw:
                         sub._z = first + increment * (sub.header.subindx % self.main_header.fwplanes)
                     else:
                         sub._z = first + increment * sub.header.subindx
+            else:
+                sub._z = True  # take from subfile header
+        else:
+            sub._z = False  # Z axis is disabled
 
         # directory
         if self.main_header.ftflgs.TXYXYS:
@@ -168,13 +134,34 @@ class SpcRaw:
         self._extra_bytes_at_eof = bytes_io.read()
         if len(self._extra_bytes_at_eof):
             logger.warning(f'{len(self._extra_bytes_at_eof)} left at the end of the file')
-
         return self
 
-    def compile(self):
+    def calcuate_offsets(self):
+        self.dirs = list()
+        ofs = sizeof(self.main_header)
+        if self.main_header.ftflgs.TXVALS and not self.main_header.ftflgs.TXYXYS:
+            ofs += sizeof(self._xarray)
+        for sub in self.subs:
+            size = sizeof(sub.header)
+            if self.main_header.ftflgs.TXVALS and self.main_header.ftflgs.TXYXYS:
+                size += sizeof(sub._xarray)
+            size += sizeof(sub._yarray)
+            ofs += size
+            self.dirs.append(Ssfstc(ssfposn=ofs, ssfsize=size, ssftime=sub.z))
+
+        # Directory offset
+        ofs += sizeof(self.log_book)
+        if self.main_header.ftflgs.TXYXYS:
+            self.main_header.fnpts = ofs
+
+        # Logbook offset
+        self.main_header.flogoff = ofs
+
+        self.main_header.fnsub = len(self.subs)
+
+    def _to_bytes_as_is(self) -> bytes:
         def to_bytes(c_data):
-            return ctypes.string_at(ctypes.addressof(c_data), ctypes.sizeof(c_data))
-        # TODO: fix offsets
+            return string_at(addressof(c_data), sizeof(c_data))
         ret = []
 
         # Main header
@@ -199,23 +186,8 @@ class SpcRaw:
         if self.log_header.logsizd > 1:  # 1 because of NUL terminated string
             ret.append(to_bytes(self.log_header))
             ret.append(to_bytes(self.log_book))
-        return ret
+        return b''.join(ret)
 
-    @property
-    def xarray(self):
-        if not self.main_header.ftflgs.TXYXYS:
-            if self.main_header.ftflgs.TXVALS:
-                arr = numpy.ctypeslib.as_array(self._xarray)
-            else:
-                arr = numpy.linspace(self.main_header.ffirst,
-                                     self.main_header.flast,
-                                     self.main_header.fnpts)
-            return arr
-        else:
-            return None
-
-    @xarray.setter
-    def xarray(self, val):
-        self._xarray = val
-        self.main_header.ffirst = val[0]
-        self.main_header.flast = val[-1]
+    def to_bytes(self) -> bytes:
+        self.calcuate_offsets()
+        return self._to_bytes_as_is()

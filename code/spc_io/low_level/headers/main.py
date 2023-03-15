@@ -1,4 +1,4 @@
-from ctypes import c_char, c_double, c_float, c_uint8, c_uint16, c_uint32, c_int16, c_int32
+from ctypes import c_char, c_double, c_float, c_uint8, c_uint16, c_uint32, c_int8
 from spc_io.misc import Structure
 from .ftflgs import Ftflgs
 from .fexper import Fexper
@@ -15,7 +15,7 @@ class SpcHdr(Structure):
         ('ftflgs', Ftflgs),         # Flag bits defined below
         ('fversn', Fversn),         # 0x4B=> new LSB 1st, 0x4C=> new MSB 1st, 0x4D=> old format
         ('fexper', Fexper),         # Instrument technique code (see below)
-        ('fexp', c_uint8),             # Fraction scaling exponent integer (80h=>float)
+        ('fexp', c_int8),           # Fraction scaling exponent integer (80h=>float)
         ('fnpts', c_uint32),        # Integer number of points (or TXYXYS directory position
         ('ffirst', c_double),       # Floating X coordinate of first point
         ('flast', c_double),        # Floating X coordinate of last point
@@ -44,12 +44,3 @@ class SpcHdr(Structure):
         ('fwtype', Fxtype),         # Type of W axis units (see definitions below)
         ('freserv', c_char*187),    # Reserved (must be set to zero)
     ]
-
-    def DataType(self):
-        if self.fexp == 0x80:
-            return c_float
-        else:
-            if self.ftflgs.TSPREC:
-                return c_int16
-            else:
-                return c_int32
