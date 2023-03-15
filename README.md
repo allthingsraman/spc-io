@@ -13,11 +13,11 @@ There are two levels of abstraction:
 - low_level is built with `ctypes.Structure`s that parse the header and data from spc;
 - high_level is more user friendly way to access data that does not contain technical details.
 
-# How to use
+## How to use
 
-## High-level structures
+### High-level structures
 
-### Read from file
+#### Read from file
 
 ```python
 import spc_io
@@ -26,14 +26,14 @@ with open(spc_file_name, 'br') as f:
     spc = spc_io.SPC.from_bytes_io(f)
 ```
 
-### Export to `pandas.DataFrame`
+#### Export to `pandas.DataFrame`
 
 ```python
 df_table = spc.to_dataframe_table()  # only possible when a global X axis is used (e.g. TXYXYS=0)
 df_flat = spc.to_dataframe_flattened()  # always possible
 ```
 
-### Access log-book
+#### Access log-book
 
 ```python
 logbook_binary = spc.log_book.binary
@@ -41,7 +41,7 @@ logbook_disk = spc.log_book.disk
 logbook_text = spc.log_book.text
 ```
 
-### Iterate over subfiles
+#### Iterate over subfiles
 
 ```python
 for sub in spc:
@@ -63,7 +63,7 @@ for sub_i in range(len(spc)):
     # do something with `xarray`, `yarray`, `w` and `z`
 ```
 
-### Design `SPC` manually and export
+#### Design `SPC` manually and export
 
 ```python
 import spc_io.high_level as spc_high
@@ -75,7 +75,7 @@ for z in [100, 200, 300]:
 df = spc.to_dataframe_table()
 ```
 
-### Use `find_wz()`
+#### Use `find_wz()`
 
 ```python
 for w in spc.warray:
@@ -85,7 +85,7 @@ for w in spc.warray:
         # subfile.xarray, subfile.yarray, subfile.w(==w) , subfile.z(==z)
 ```
 
-### Export to a `spc` file
+#### Export to a `spc` file
 
 ```python
 spc_filname = 'non-existing.spc'
@@ -94,11 +94,11 @@ with open(spc_filename, 'wb') as f:
 ```
 
 
-## Low-level structures
+### Low-level structures
 
 For some specific tasks or debugging low-level structures might be helpful
 
-### Read SpcRaw from file
+#### Read SpcRaw from file
 
 ```python
 import spc_io
@@ -107,7 +107,7 @@ with open(spc_file_name, 'br') as f:
     spcraw = spc_io.SpcRaw.from_bytes_io(f)
 ```
 
-### Access header fields
+#### Access header fields
 
 ```python
 if spcraw.main_header.ftflgs.TMULTI:
@@ -121,9 +121,9 @@ for sub in spcraw.subs:
 ```
 
 
-# Some other examples
+## Some other examples
 
-## `spc[0].xarray is spc.xarray` when `TXYXYX=0`
+### `spc[0].xarray is spc.xarray` when `TXYXYX=0`
 
 ```python
 import spc_io.high_level as spc_high
@@ -132,3 +132,7 @@ spc = spc_high.SPC(xarray=spc_high.EvenAxis(1, 10, 100))
 spc.add_subfile(yarray=np.random.uniform(size=100))
 assert spc.xarray is spc[0].xarray
 ```
+
+## Acknowledgements
+
+🇪🇺 This project has received funding from the European Union’s Horizon 2020 research and innovation program under [grant agreement No. 952921](https://cordis.europa.eu/project/id/952921).
