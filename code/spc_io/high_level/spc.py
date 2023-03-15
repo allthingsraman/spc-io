@@ -8,7 +8,7 @@ import numpy as np
 from pydantic import validate_arguments
 from spc_io.low_level.headers.fxytype import Fxtype, Fytype
 from spc_io.low_level.spc_raw import SpcRaw
-from spc_io.low_level.headers.main import SpcHdr
+from spc_io.low_level.headers.spchdr import SpcHdr
 from spc_io.low_level.headers.fdate import Fdate
 from spc_io.low_level.headers.fversn import Fversn
 from spc_io.low_level.headers.ftflgs import Ftflgs
@@ -98,7 +98,16 @@ class SPC:
 
     def __repr__(self):
         subs = ',\n'.join([str(sub) for sub in self._subs])
-        return f'{type(self).__name__}(xarray={self.xarray}, date={self.date}, subs={subs}, log_book={self.log_book})'
+        return f'{type(self).__name__}(xarray={self._xarray}, date={self.date}, subs={subs}, log_book={self.log_book})'
+
+    def __len__(self):
+        return len(self._subs)
+
+    def __getitem__(self, idx):
+        return self._subs[idx]
+
+    def __iter__(self):
+        return iter(self._subs)
 
     @property
     def xarray(self):

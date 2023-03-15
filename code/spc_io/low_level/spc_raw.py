@@ -3,10 +3,10 @@ import io
 from typing import List, Union
 import logging
 from pydantic import validate_arguments
-from .headers.main import SpcHdr
+from .headers.spchdr import SpcHdr
 from .headers.sub_hdr import SubHdr
-from .headers.logbook import Logstc
-from .headers.directory import Ssfstc
+from .headers.logstc import Logstc
+from .headers.ssfstc import Ssfstc
 from .sub_file import SubFile
 from .xarray_property import XArrayProperty
 
