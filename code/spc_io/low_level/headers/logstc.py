@@ -6,7 +6,11 @@ from pydantic import validate_arguments
 
 class LogBookBase:
     def txt_as_dict(self):
-        return dict([i.split(b'=') for ii in self.txt.split(b'\r\n') for i in ii.split(b'\n\r') if b'=' in i])
+        return dict([i.decode(errors='surrogateescape').split('=')
+                     for ii in self.txt.split(b'\r\n')
+                     for i in ii.split(b'\n\r')
+                     if b'=' in i
+                     ])
 
     def disk_as_bytes(self):
         return bytearray(string_at(addressof(self.disk), sizeof(self.disk)))
@@ -33,7 +37,7 @@ class Logstc(Structure):
                                          binary: bytes = b'',
                                          txt: Union[bytes, Dict] = b''):
         if isinstance(txt, dict):
-            txt = b'\r\n'.join([f'{k}={v}'.encode() for k, v in txt.items()])
+            txt = b'\r\n'.join([f'{k}={v}'.encode(errors='surrogateescape') for k, v in txt.items()])
         txt += b'\x00'  # NUL terminate
         logsizd = len(disk)+len(binary)+len(txt)+sizeof(cls)
         logsizm = ((logsizd // 4096) + 1) * 4096
