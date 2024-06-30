@@ -109,7 +109,8 @@ class SpcRaw(XArrayProperty):
                     else:
                         sub._z = first + increment * sub.header.subindx
             else:
-                sub._z = True  # take from subfile header
+                for sub in self.subs:
+                    sub._z = True  # take from subfile header
         else:
             sub._z = False  # Z axis is disabled
 
