@@ -1,9 +1,11 @@
+import logging
 from ctypes import Array, c_float, c_int16, c_int32
 from typing import Literal, Union
-import numpy.typing as npt
+
 import numpy as np
-import logging
-import pydantic
+import numpy.typing as npt
+from pydantic import validate_call
+
 from .headers.sub_hdr import SubHdr
 from .xarray_property import XArrayProperty
 
@@ -11,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class SubFile(XArrayProperty):
-    @pydantic.validate_arguments(config=dict(arbitrary_types_allowed=True))
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def __init__(self, header: SubHdr,
                  xarray: Union[npt.NDArray, Array, None] = None,
                  yarray: Union[npt.NDArray, Array, None] = None,
@@ -44,7 +46,7 @@ class SubFile(XArrayProperty):
         return self._yarray_type
 
     @yarray_type.setter
-    @pydantic.validate_arguments(config=dict(arbitrary_types_allowed=True))
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def yarray_type(self, val: Literal[c_float, c_int16, c_int32]):
         self._yarray_type = val
 
@@ -97,7 +99,7 @@ class SubFile(XArrayProperty):
             return (2. ** (self.header.subexp-32)) * arr
 
     @yarray.setter
-    @pydantic.validate_arguments(config=dict(arbitrary_types_allowed=True))
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def yarray(self, arr: Union[npt.NDArray, Array, None]):
         if arr is None:
             self._yarray = arr

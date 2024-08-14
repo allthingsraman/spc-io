@@ -1,6 +1,6 @@
-from spc_io.high_level.spc import SPC, SPCSubFile
-import pytest
 import numpy as np
+import pytest
+from spc_io.high_level.spc import SPC, SPCSubFile
 
 
 def test_subfile():

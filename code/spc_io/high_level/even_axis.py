@@ -1,9 +1,9 @@
-from pydantic import validate_arguments
 from numpy import linspace
+from pydantic import validate_call
 
 
 class EvenAxis:
-    @validate_arguments
+    @validate_call
     def __init__(self, start: float, stop: float, num: int):
         self._start = start
         self._stop = stop

@@ -1,8 +1,9 @@
-from ctypes import c_float, Array
+from ctypes import Array, c_float
 from typing import Union
+
 import numpy as np
 import numpy.typing as npt
-from pydantic import validate_arguments
+from pydantic import validate_call
 
 
 class XArrayProperty:
@@ -14,7 +15,7 @@ class XArrayProperty:
             return np.ctypeslib.as_array(self._xarray)
 
     @xarray.setter
-    @validate_arguments(config=dict(arbitrary_types_allowed=True))
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def xarray(self, arr: Union[npt.NDArray, Array, None]):
         if arr is None:
             self._xarray = None

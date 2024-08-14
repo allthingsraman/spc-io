@@ -1,5 +1,6 @@
+from ctypes import c_float, c_uint32
+
 from spc_io.misc import Structure
-from ctypes import c_uint32, c_float
 
 
 class Ssfstc(Structure):

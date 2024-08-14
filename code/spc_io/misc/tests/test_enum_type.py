@@ -1,4 +1,5 @@
 import ctypes
+
 from spc_io.misc import EnumType
 
 
