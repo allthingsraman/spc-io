@@ -1,33 +1,34 @@
 from __future__ import annotations
 
 import io
-from typing import Union, List, Literal, ForwardRef
 import logging
 from datetime import datetime
-import numpy.typing as npt
+from typing import List, Literal, Union
+
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
-from pydantic import validate_arguments
-from spc_io.low_level.headers.fxytype import Fxtype, Fytype
-from spc_io.low_level.spc_raw import SpcRaw
-from spc_io.low_level.headers.spchdr import SpcHdr
+from pydantic import validate_call
 from spc_io.low_level.headers.fdate import Fdate
-from spc_io.low_level.headers.fversn import Fversn
 from spc_io.low_level.headers.ftflgs import Ftflgs
+from spc_io.low_level.headers.fversn import Fversn
+from spc_io.low_level.headers.fxytype import Fxtype, Fytype
+from spc_io.low_level.headers.spchdr import SpcHdr
+from spc_io.low_level.headers.sub_hdr import Subflgs, SubHdr
+from spc_io.low_level.spc_raw import SpcRaw
 from spc_io.low_level.sub_file import SubFile
-from spc_io.low_level.headers.sub_hdr import SubHdr, Subflgs
-from .log_book import LogBook
+
 from .even_axis import EvenAxis
+from .log_book import LogBook
 
 logger = logging.getLogger(__name__)
 
-SPC = ForwardRef('SPC')
-
 
 class SPCSubFile:
-    @validate_arguments(config=dict(arbitrary_types_allowed=True))
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def __init__(self,
-                 parent: SPC, *,
+                 parent,
+                 *,
                  xarray: Union[npt.NDArray, None] = None,
                  yarray: npt.NDArray,
                  w: Union[float, None] = None,
@@ -78,8 +79,8 @@ class SPCSubFile:
         return self._z
 
 
-class SPC:
-    @validate_arguments(config=dict(arbitrary_types_allowed=True))
+class SPC:  # NOQA: F811
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def __init__(self,
                  xarray: Union[EvenAxis, npt.NDArray, None] = None,
                  xtype: Literal[tuple(Fxtype._enums_.values())] = Fxtype._enums_[0],
@@ -127,7 +128,7 @@ class SPC:
         return np.unique([sub.z for sub in self._subs if sub.z is not None])
 
     @classmethod
-    @validate_arguments(config=dict(arbitrary_types_allowed=True))
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def from_spc_raw(cls, spc_raw: SpcRaw):
         log_book = LogBook(disk=spc_raw.log_book.disk_as_bytes(),
                            binary=spc_raw.log_book.binary_as_bytes(),
@@ -272,6 +273,3 @@ class SPC:
                                       log_binary=self.log_book.binary,
                                       log_txt=self.log_book.text
                                       )
-
-
-SPCSubFile.__init__.model.update_forward_refs(SPC=SPC)

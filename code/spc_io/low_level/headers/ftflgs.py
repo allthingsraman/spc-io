@@ -1,4 +1,5 @@
 from ctypes import c_uint8
+
 from spc_io.misc import Structure
 
 

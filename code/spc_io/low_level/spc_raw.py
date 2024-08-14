@@ -1,12 +1,14 @@
-from ctypes import sizeof, c_float, string_at, addressof, c_int16, c_int32
 import io
-from typing import List, Union
 import logging
-from pydantic import validate_arguments
-from .headers.spchdr import SpcHdr
-from .headers.sub_hdr import SubHdr
+from ctypes import addressof, c_float, c_int16, c_int32, sizeof, string_at
+from typing import List, Union
+
+from pydantic import validate_call
+
 from .headers.logstc import Logstc
+from .headers.spchdr import SpcHdr
 from .headers.ssfstc import Ssfstc
+from .headers.sub_hdr import SubHdr
 from .sub_file import SubFile
 from .xarray_property import XArrayProperty
 
@@ -15,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class SpcRaw(XArrayProperty):
     @classmethod
-    @validate_arguments(config=dict(arbitrary_types_allowed=True))
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def from_high_level(cls, *,
                         header: SpcHdr,
                         subs: List[SubFile],

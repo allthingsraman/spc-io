@@ -1,7 +1,8 @@
+from ctypes import addressof, c_char, c_uint8, c_uint32, sizeof, string_at
 from typing import Dict, Union
-from ctypes import c_char, c_uint8, c_uint32, sizeof, string_at, addressof
+
+from pydantic import validate_call
 from spc_io.misc import Structure
-from pydantic import validate_arguments
 
 
 class LogBookBase:
@@ -31,7 +32,7 @@ class Logstc(Structure):
     ]
 
     @classmethod
-    @validate_arguments
+    @validate_call
     def new_header_and_logbook_from_data(cls, *,
                                          disk: bytes = b'',
                                          binary: bytes = b'',

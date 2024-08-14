@@ -1,11 +1,14 @@
-from ctypes import c_char, c_double, c_float, c_uint8, c_uint16, c_uint32, c_int8
+from ctypes import (c_char, c_double, c_float, c_int8, c_uint8, c_uint16,
+                    c_uint32)
+
 from spc_io.misc import Structure
-from .ftflgs import Ftflgs
+
+from .fdate import Fdate
 from .fexper import Fexper
+from .fmods import Fmods
+from .ftflgs import Ftflgs
 from .fversn import Fversn
 from .fxytype import Fxtype, Fytype
-from .fdate import Fdate
-from .fmods import Fmods
 
 
 class SpcHdr(Structure):

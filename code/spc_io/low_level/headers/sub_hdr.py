@@ -1,4 +1,5 @@
-from ctypes import c_char, c_float, c_uint8, c_uint16, c_uint32, c_int8
+from ctypes import c_char, c_float, c_int8, c_uint8, c_uint16, c_uint32
+
 from spc_io.misc import Structure
 
 

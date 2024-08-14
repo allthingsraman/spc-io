@@ -1,10 +1,11 @@
-from typing import Union, Dict
 from datetime import datetime
-from pydantic import validate_arguments
+from typing import Dict, Union
+
+from pydantic import validate_call
 
 
 class LogBook:
-    @validate_arguments
+    @validate_call
     def __init__(self, *,
                  disk: bytes = b'',
                  binary: bytes = b'',
