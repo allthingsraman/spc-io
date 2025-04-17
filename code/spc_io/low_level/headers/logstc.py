@@ -1,3 +1,4 @@
+import re
 from ctypes import addressof, c_char, c_uint8, c_uint32, sizeof, string_at
 from typing import Dict, Union
 
@@ -8,8 +9,7 @@ from spc_io.misc import Structure
 class LogBookBase:
     def txt_as_dict(self):
         return dict([i.decode(errors='surrogateescape').split('=')
-                     for ii in self.txt.split(b'\r\n')
-                     for i in ii.split(b'\n\r')
+                     for i in re.split(rb'[\r\n]+', self.txt)
                      if b'=' in i
                      ])
 
